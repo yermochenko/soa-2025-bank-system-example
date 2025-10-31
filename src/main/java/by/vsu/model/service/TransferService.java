@@ -3,6 +3,7 @@ package by.vsu.model.service;
 import by.vsu.domain.Account;
 import by.vsu.domain.Transfer;
 import by.vsu.exception.ApplicationException;
+import by.vsu.exception.InsufficientFundsException;
 import by.vsu.exception.NotActiveException;
 import by.vsu.exception.NotFoundException;
 import by.vsu.model.repository.AccountRepository;
@@ -43,6 +44,42 @@ public class TransferService {
 			} else {
 				throw new NotFoundException("Account not found");
 			}
+		} catch(SQLException e) {
+			throw new ApplicationException(e);
+		}
+	}
+
+	public Transfer transfer(String fromAccountNumber, String toAccountNumber, long amount) throws ApplicationException {
+		try {
+			Optional<Account> foundFromAccount = accountRepository.readByNumber(fromAccountNumber);
+			if(foundFromAccount.isEmpty()) {
+				throw new NotFoundException("Source account not found");
+			}
+			Account fromAccount = foundFromAccount.get();
+			if(!fromAccount.isActive()) {
+				throw new NotActiveException("Source account was blocked or closed");
+			}
+			Optional<Account> foundToAccount = accountRepository.readByNumber(toAccountNumber);
+			if(foundToAccount.isEmpty()) {
+				throw new NotFoundException("Destination account not found");
+			}
+			Account toAccount = foundToAccount.get();
+			if(!toAccount.isActive()) {
+				throw new NotActiveException("Destination account was blocked or closed");
+			}
+			if(amount > fromAccount.getBalance()) {
+				throw new InsufficientFundsException("Source account has insufficient funds");
+			}
+			fromAccount.setBalance(fromAccount.getBalance() - amount);
+			accountRepository.update(fromAccount);
+			toAccount.setBalance(toAccount.getBalance() + amount);
+			accountRepository.update(toAccount);
+			Transfer transfer = new Transfer();
+			transfer.setFromAccount(fromAccount);
+			transfer.setToAccount(toAccount);
+			transfer.setAmount(amount);
+			transferRepository.create(transfer);
+			return transfer;
 		} catch(SQLException e) {
 			throw new ApplicationException(e);
 		}
