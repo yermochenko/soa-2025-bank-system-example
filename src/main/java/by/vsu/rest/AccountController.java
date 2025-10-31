@@ -30,13 +30,31 @@ public class AccountController extends HttpServlet {
 	@Override
 	protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 		ObjectMapper mapper = new ObjectMapper();
-		try {
-			AccountService accountService = ServiceFactory.getAccountService();
+		try(ServiceFactory factory = new ServiceFactory()) {
+			AccountService accountService = factory.getAccountService();
 			List<Account> accounts = accountService.showAll();
 			resp.setStatus(HttpServletResponse.SC_OK);
 			resp.setContentType("application/json");
 			mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
 			mapper.writeValue(resp.getWriter(), accounts);
+		} catch(ApplicationException e) {
+			throw new ServletException(e);
+		}
+	}
+
+	@Override
+	protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+		ObjectMapper mapper = new ObjectMapper();
+		String client = mapper.readValue(req.getInputStream(), String.class);
+		Account account = new Account();
+		account.setClient(client);
+		try(ServiceFactory factory = new ServiceFactory()) {
+			AccountService accountService = factory.getAccountService();
+			accountService.create(account);
+			resp.setStatus(HttpServletResponse.SC_CREATED);
+			resp.setContentType("application/json");
+			mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+			mapper.writeValue(resp.getWriter(), account);
 		} catch(ApplicationException e) {
 			throw new ServletException(e);
 		}

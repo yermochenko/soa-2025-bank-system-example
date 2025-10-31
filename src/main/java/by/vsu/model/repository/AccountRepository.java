@@ -5,25 +5,58 @@ import by.vsu.domain.Account;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 public class AccountRepository {
-	private final String url;
-	private final String user;
-	private final String password;
+	private Connection connection;
 
-	public AccountRepository(String url, String user, String password) {
-		this.url = url;
-		this.user = user;
-		this.password = password;
+	public void setConnection(Connection connection) {
+		this.connection = connection;
+	}
+
+	public void create(Account account) throws SQLException {
+		String sql = "INSERT INTO \"account\" (\"account_number\", \"client\") VALUES (?, ?)";
+		PreparedStatement statement = null;
+		try {
+			statement = connection.prepareStatement(sql);
+			statement.setString(1, account.getAccountNumber());
+			statement.setString(2, account.getClient());
+			statement.executeUpdate();
+		} finally {
+			if(statement != null) try { statement.close(); } catch(SQLException ignored) {}
+		}
+	}
+
+	public Optional<Account> readByNumber(String accountNumber) throws SQLException {
+		String sql = "SELECT \"id\", \"client\", \"balance\", \"active\" FROM \"account\" WHERE \"account_number\" = ?";
+		PreparedStatement statement = null;
+		ResultSet resultSet = null;
+		try {
+			statement = connection.prepareStatement(sql);
+			statement.setString(1, accountNumber);
+			resultSet = statement.executeQuery();
+			if(resultSet.next()) {
+				Account account = new Account();
+				account.setId(resultSet.getLong("id"));
+				account.setAccountNumber(accountNumber);
+				account.setClient(resultSet.getString("client"));
+				account.setBalance(resultSet.getLong("balance"));
+				account.setActive(resultSet.getBoolean("active"));
+				return Optional.of(account);
+			} else {
+				return Optional.empty();
+			}
+		} finally {
+			if(resultSet != null) try { resultSet.close(); } catch(SQLException ignored) {}
+			if(statement != null) try { statement.close(); } catch(SQLException ignored) {}
+		}
 	}
 
 	public List<Account> readAll() throws SQLException {
 		String sql = "SELECT \"id\", \"account_number\", \"client\", \"balance\", \"active\" FROM \"account\"";
-		Connection connection = null;
 		Statement statement = null;
 		ResultSet resultSet = null;
 		try {
-			connection = DriverManager.getConnection(url, user, password);
 			statement = connection.createStatement();
 			resultSet = statement.executeQuery(sql);
 			List<Account> accounts = new ArrayList<>();
@@ -40,7 +73,6 @@ public class AccountRepository {
 		} finally {
 			if(resultSet != null) try { resultSet.close(); } catch(SQLException ignored) {}
 			if(statement != null) try { statement.close(); } catch(SQLException ignored) {}
-			if(connection != null) try { connection.close(); } catch(SQLException ignored) {}
 		}
 	}
 }
