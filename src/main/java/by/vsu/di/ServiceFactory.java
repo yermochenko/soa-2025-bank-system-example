@@ -2,7 +2,9 @@ package by.vsu.di;
 
 import by.vsu.exception.ApplicationException;
 import by.vsu.model.repository.AccountRepository;
+import by.vsu.model.repository.TransferRepository;
 import by.vsu.model.service.AccountService;
+import by.vsu.model.service.TransferService;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -18,10 +20,23 @@ public class ServiceFactory implements AutoCloseable {
 		Class.forName(JDBC_DRIVER);
 	}
 
+	private AccountService accountService;
 	public AccountService getAccountService() throws ApplicationException {
-		AccountService service = new AccountService();
-		service.setAccountRepository(getAccountRepository());
-		return service;
+		if(accountService == null) {
+			accountService = new AccountService();
+			accountService.setAccountRepository(getAccountRepository());
+		}
+		return accountService;
+	}
+
+	private TransferService transferService;
+	public TransferService getTransferService() throws ApplicationException {
+		if(transferService == null) {
+			transferService = new TransferService();
+			transferService.setAccountRepository(getAccountRepository());
+			transferService.setTransferRepository(getTransferRepository());
+		}
+		return transferService;
 	}
 
 	private AccountRepository accountRepository;
@@ -31,6 +46,15 @@ public class ServiceFactory implements AutoCloseable {
 			accountRepository.setConnection(getConnection());
 		}
 		return accountRepository;
+	}
+
+	private TransferRepository transferRepository;
+	private TransferRepository getTransferRepository() throws ApplicationException {
+		if(transferRepository == null) {
+			transferRepository = new TransferRepository();
+			transferRepository.setConnection(getConnection());
+		}
+		return transferRepository;
 	}
 
 	private Connection connection;
