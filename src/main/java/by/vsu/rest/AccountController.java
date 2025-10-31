@@ -59,4 +59,20 @@ public class AccountController extends HttpServlet {
 			throw new ServletException(e);
 		}
 	}
+
+	@Override
+	protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+		ObjectMapper mapper = new ObjectMapper();
+		Account account = mapper.readValue(req.getInputStream(), Account.class);
+		try(ServiceFactory factory = new ServiceFactory()) {
+			AccountService accountService = factory.getAccountService();
+			if(accountService.update(account)) {
+				resp.setStatus(HttpServletResponse.SC_NO_CONTENT);
+			} else {
+				resp.sendError(HttpServletResponse.SC_NOT_FOUND);
+			}
+		} catch(ApplicationException e) {
+			throw new ServletException(e);
+		}
+	}
 }

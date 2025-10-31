@@ -6,6 +6,7 @@ import by.vsu.model.repository.AccountRepository;
 
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -35,6 +36,18 @@ public class AccountService {
 			account.setAccountNumber(accountNumber);
 			account.setActive(true);
 			accountRepository.create(account);
+		} catch(SQLException e) {
+			throw new ApplicationException(e);
+		}
+	}
+
+	public boolean update(Account account) throws ApplicationException {
+		try {
+			Optional<Account> accountOld = accountRepository.readByNumber(account.getAccountNumber());
+			if(accountOld.isEmpty()) return false;
+			accountOld.get().setClient(account.getClient());
+			accountRepository.update(accountOld.get());
+			return true;
 		} catch(SQLException e) {
 			throw new ApplicationException(e);
 		}

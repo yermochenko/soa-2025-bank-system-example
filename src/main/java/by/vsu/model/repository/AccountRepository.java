@@ -75,4 +75,19 @@ public class AccountRepository {
 			if(statement != null) try { statement.close(); } catch(SQLException ignored) {}
 		}
 	}
+
+	public void update(Account account) throws SQLException {
+		String sql = "UPDATE \"account\" SET \"client\" = ?, \"balance\" = ?, \"active\" = ? WHERE \"id\" = ?";
+		PreparedStatement statement = null;
+		try {
+			statement = connection.prepareStatement(sql);
+			statement.setString(1, account.getClient());
+			statement.setLong(2, account.getBalance());
+			statement.setBoolean(3, account.isActive());
+			statement.setLong(4, account.getId());
+			statement.executeUpdate();
+		} finally {
+			if(statement != null) try { statement.close(); } catch(SQLException ignored) {}
+		}
+	}
 }
