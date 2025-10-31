@@ -1,34 +1,29 @@
 package by.vsu;
 
-import java.sql.*;
+import by.vsu.domain.Account;
+import by.vsu.model.repository.AccountRepository;
+
+import java.sql.SQLException;
+import java.util.List;
 
 public class Test {
 	public static void main(String[] args) {
-		String sql = "SELECT \"id\", \"account_number\", \"client\", \"balance\", \"active\" FROM \"account\"";
-		Connection connection = null;
-		Statement statement = null;
-		ResultSet resultSet = null;
 		try {
 			Class.forName("org.postgresql.Driver");
-			connection = DriverManager.getConnection("jdbc:postgresql://localhost:5432/soa-2025-bank", "root", "root");
-			statement = connection.createStatement();
-			resultSet = statement.executeQuery(sql);
-			while(resultSet.next()) {
+			AccountRepository repository = new AccountRepository("jdbc:postgresql://localhost:5432/soa-2025-bank", "root", "root");
+			List<Account> accounts = repository.readAll();
+			for(Account account : accounts) {
 				System.out.printf(
 					"[%c%d] %s, %s, balance $%d\n",
-					resultSet.getBoolean("active") ? '+' : '-',
-					resultSet.getLong("id"),
-					resultSet.getString("account_number"),
-					resultSet.getString("client"),
-					resultSet.getLong("balance")
+					account.isActive() ? '+' : '-',
+					account.getId(),
+					account.getAccountNumber(),
+					account.getClient(),
+					account.getBalance()
 				);
 			}
 		} catch (ClassNotFoundException | SQLException e) {
 			e.printStackTrace(System.out);
-		} finally {
-			if(resultSet != null) try { resultSet.close(); } catch(SQLException ignored) {}
-			if(statement != null) try { statement.close(); } catch(SQLException ignored) {}
-			if(connection != null) try { connection.close(); } catch(SQLException ignored) {}
 		}
 	}
 }
