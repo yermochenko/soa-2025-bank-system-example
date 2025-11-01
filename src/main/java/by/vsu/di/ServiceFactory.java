@@ -25,6 +25,7 @@ public class ServiceFactory implements AutoCloseable {
 		if(accountService == null) {
 			accountService = new AccountService();
 			accountService.setAccountRepository(getAccountRepository());
+			accountService.setTransferRepository(getTransferRepository());
 		}
 		return accountService;
 	}

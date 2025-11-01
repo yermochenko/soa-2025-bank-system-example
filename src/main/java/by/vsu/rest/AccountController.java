@@ -14,7 +14,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.List;
+import java.util.Optional;
 
 @WebServlet("/api/account")
 public class AccountController extends HttpServlet {
@@ -30,13 +32,28 @@ public class AccountController extends HttpServlet {
 	@Override
 	protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 		ObjectMapper mapper = new ObjectMapper();
+		mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
 		try(ServiceFactory factory = new ServiceFactory()) {
 			AccountService accountService = factory.getAccountService();
-			List<Account> accounts = accountService.showAll();
-			resp.setStatus(HttpServletResponse.SC_OK);
-			resp.setContentType("application/json");
-			mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-			mapper.writeValue(resp.getWriter(), accounts);
+			String number = req.getParameter("number");
+			if(number != null) {
+				Optional<Account> account = accountService.showOne(number);
+				if(account.isPresent()) {
+					resp.setStatus(HttpServletResponse.SC_OK);
+					resp.setContentType("application/json");
+					mapper.setDateFormat(new SimpleDateFormat("yyyy-MM-dd,HH:mm:ss"));
+					mapper.writeValue(resp.getOutputStream(), account.get());
+				} else {
+					resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
+					resp.setContentType("application/json");
+					mapper.writeValue(resp.getOutputStream(), "Nothing found");
+				}
+			} else {
+				List<Account> accounts = accountService.showAll();
+				resp.setStatus(HttpServletResponse.SC_OK);
+				resp.setContentType("application/json");
+				mapper.writeValue(resp.getOutputStream(), accounts);
+			}
 		} catch(ApplicationException e) {
 			throw new ServletException(e);
 		}

@@ -1,8 +1,10 @@
 package by.vsu.model.service;
 
 import by.vsu.domain.Account;
+import by.vsu.domain.Transfer;
 import by.vsu.exception.ApplicationException;
 import by.vsu.model.repository.AccountRepository;
+import by.vsu.model.repository.TransferRepository;
 
 import java.sql.SQLException;
 import java.util.List;
@@ -13,14 +15,44 @@ import java.util.stream.Stream;
 
 public class AccountService {
 	private AccountRepository accountRepository;
+	private TransferRepository transferRepository;
 
 	public void setAccountRepository(AccountRepository accountRepository) {
 		this.accountRepository = accountRepository;
 	}
 
+	public void setTransferRepository(TransferRepository transferRepository) {
+		this.transferRepository = transferRepository;
+	}
+
 	public List<Account> showAll() throws ApplicationException {
 		try {
 			return accountRepository.readAll();
+		} catch(SQLException e) {
+			throw new ApplicationException(e);
+		}
+	}
+
+	public Optional<Account> showOne(String accountNumber) throws ApplicationException {
+		try {
+			Optional<Account> account = accountRepository.readByNumber(accountNumber);
+			if(account.isPresent()) {
+				List<Transfer> history = transferRepository.readByAccount(account.get().getId());
+				for(Transfer transfer : history) {
+					Account from = transfer.getFromAccount();
+					if(from != null && !from.getId().equals(account.get().getId())) {
+						from = accountRepository.read(from.getId()).orElse(null);
+						transfer.setFromAccount(from);
+					}
+					Account to = transfer.getToAccount();
+					if(to != null && !to.getId().equals(account.get().getId())) {
+						to = accountRepository.read(to.getId()).orElse(null);
+						transfer.setToAccount(to);
+					}
+				}
+				account.get().setHistory(history);
+			}
+			return account;
 		} catch(SQLException e) {
 			throw new ApplicationException(e);
 		}

@@ -27,6 +27,31 @@ public class AccountRepository {
 		}
 	}
 
+	public Optional<Account> read(Long id) throws SQLException {
+		String sql = "SELECT \"account_number\", \"client\", \"balance\", \"active\" FROM \"account\" WHERE \"id\" = ?";
+		PreparedStatement statement = null;
+		ResultSet resultSet = null;
+		try {
+			statement = connection.prepareStatement(sql);
+			statement.setLong(1, id);
+			resultSet = statement.executeQuery();
+			if(resultSet.next()) {
+				Account account = new Account();
+				account.setId(id);
+				account.setAccountNumber(resultSet.getString("account_number"));
+				account.setClient(resultSet.getString("client"));
+				account.setBalance(resultSet.getLong("balance"));
+				account.setActive(resultSet.getBoolean("active"));
+				return Optional.of(account);
+			} else {
+				return Optional.empty();
+			}
+		} finally {
+			if(resultSet != null) try { resultSet.close(); } catch(SQLException ignored) {}
+			if(statement != null) try { statement.close(); } catch(SQLException ignored) {}
+		}
+	}
+
 	public Optional<Account> readByNumber(String accountNumber) throws SQLException {
 		String sql = "SELECT \"id\", \"client\", \"balance\", \"active\" FROM \"account\" WHERE \"account_number\" = ?";
 		PreparedStatement statement = null;
