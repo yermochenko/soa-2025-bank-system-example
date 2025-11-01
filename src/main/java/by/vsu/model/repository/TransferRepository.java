@@ -60,7 +60,7 @@ public class TransferRepository {
 					transfer.setToAccount(new Account());
 					transfer.getToAccount().setId(toAccountId);
 				}
-				transfer.setTransferDate(new Date(resultSet.getDate("transfer_date").getTime()));
+				transfer.setTransferDate(new Date(resultSet.getTimestamp("transfer_date").getTime()));
 				transfer.setAmount(resultSet.getLong("amount"));
 				transfers.add(transfer);
 			}
