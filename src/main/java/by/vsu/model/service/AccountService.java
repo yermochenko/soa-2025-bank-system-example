@@ -3,6 +3,9 @@ package by.vsu.model.service;
 import by.vsu.domain.Account;
 import by.vsu.domain.Transfer;
 import by.vsu.exception.ApplicationException;
+import by.vsu.exception.NonZeroBalanceException;
+import by.vsu.exception.NotActiveException;
+import by.vsu.exception.NotFoundException;
 import by.vsu.model.repository.AccountRepository;
 import by.vsu.model.repository.TransferRepository;
 
@@ -80,6 +83,34 @@ public class AccountService {
 			accountOld.get().setClient(account.getClient());
 			accountRepository.update(accountOld.get());
 			return true;
+		} catch(SQLException e) {
+			throw new ApplicationException(e);
+		}
+	}
+
+	public void delete(String accountNumber) throws ApplicationException {
+		try {
+			Optional<Account> foundAccount = accountRepository.readByNumber(accountNumber);
+			if(foundAccount.isPresent()) {
+				Account account = foundAccount.get();
+				if(account.isActive()) {
+					if(account.getBalance() == 0) {
+						List<Transfer> history = transferRepository.readByAccount(foundAccount.get().getId());
+						if(history.isEmpty()) {
+							accountRepository.delete(account.getId());
+						} else {
+							account.setActive(false);
+							accountRepository.update(account);
+						}
+					} else {
+						throw new NonZeroBalanceException(String.format("Account has non zero balance %d", account.getBalance()));
+					}
+				} else {
+					throw new NotActiveException("Account is not active");
+				}
+			} else {
+				throw new NotFoundException("Account not exists");
+			}
 		} catch(SQLException e) {
 			throw new ApplicationException(e);
 		}

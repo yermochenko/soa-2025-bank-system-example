@@ -3,6 +3,9 @@ package by.vsu.rest;
 import by.vsu.di.ServiceFactory;
 import by.vsu.domain.Account;
 import by.vsu.exception.ApplicationException;
+import by.vsu.exception.NonZeroBalanceException;
+import by.vsu.exception.NotActiveException;
+import by.vsu.exception.NotFoundException;
 import by.vsu.model.service.AccountService;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -88,6 +91,33 @@ public class AccountController extends HttpServlet {
 			} else {
 				resp.sendError(HttpServletResponse.SC_NOT_FOUND);
 			}
+		} catch(ApplicationException e) {
+			throw new ServletException(e);
+		}
+	}
+
+	@Override
+	protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+		ObjectMapper mapper = new ObjectMapper();
+		try(ServiceFactory factory = new ServiceFactory()) {
+			AccountService accountService = factory.getAccountService();
+			String number = req.getParameter("number");
+			if(number != null) {
+				accountService.delete(number);
+				resp.setStatus(HttpServletResponse.SC_NO_CONTENT);
+			} else {
+				resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+				resp.setContentType("application/json");
+				mapper.writeValue(resp.getOutputStream(), "Parameter id is required");
+			}
+		} catch(NotActiveException | NonZeroBalanceException e) {
+			resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+			resp.setContentType("application/json");
+			mapper.writeValue(resp.getOutputStream(), e.getMessage());
+		} catch(NotFoundException e) {
+			resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
+			resp.setContentType("application/json");
+			mapper.writeValue(resp.getOutputStream(), e.getMessage());
 		} catch(ApplicationException e) {
 			throw new ServletException(e);
 		}

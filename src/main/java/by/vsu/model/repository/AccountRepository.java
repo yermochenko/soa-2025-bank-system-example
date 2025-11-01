@@ -53,7 +53,7 @@ public class AccountRepository {
 	}
 
 	public Optional<Account> readByNumber(String accountNumber) throws SQLException {
-		String sql = "SELECT \"id\", \"client\", \"balance\", \"active\" FROM \"account\" WHERE \"account_number\" = ?";
+		String sql = "SELECT \"id\", \"client\", \"balance\", \"active\" FROM \"account\" WHERE \"account_number\" = ? AND \"active\" IS TRUE";
 		PreparedStatement statement = null;
 		ResultSet resultSet = null;
 		try {
@@ -78,7 +78,7 @@ public class AccountRepository {
 	}
 
 	public List<Account> readAll() throws SQLException {
-		String sql = "SELECT \"id\", \"account_number\", \"client\", \"balance\", \"active\" FROM \"account\"";
+		String sql = "SELECT \"id\", \"account_number\", \"client\", \"balance\", \"active\" FROM \"account\" WHERE \"active\" IS TRUE";
 		Statement statement = null;
 		ResultSet resultSet = null;
 		try {
@@ -110,6 +110,19 @@ public class AccountRepository {
 			statement.setLong(2, account.getBalance());
 			statement.setBoolean(3, account.isActive());
 			statement.setLong(4, account.getId());
+			statement.executeUpdate();
+		} finally {
+			if(statement != null) try { statement.close(); } catch(SQLException ignored) {}
+		}
+	}
+
+
+	public void delete(Long id) throws SQLException {
+		String sql = "DELETE FROM \"account\" WHERE \"id\" = ?";
+		PreparedStatement statement = null;
+		try {
+			statement = connection.prepareStatement(sql);
+			statement.setLong(1, id);
 			statement.executeUpdate();
 		} finally {
 			if(statement != null) try { statement.close(); } catch(SQLException ignored) {}
